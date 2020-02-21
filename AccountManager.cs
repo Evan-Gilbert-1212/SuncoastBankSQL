@@ -9,11 +9,11 @@ namespace SuncoastBank
 {
   public class AccountManager
   {
+    public List<User> userList = new List<User>();
+
     public List<Account> userAccounts = new List<Account>();
 
     public List<Transaction> userTransactions = new List<Transaction>();
-
-    public List<User> userList = new List<User>();
 
     public void LoadUsersFromFile()
     {
@@ -137,47 +137,69 @@ namespace SuncoastBank
       SaveTransactionsToFile();
     }
 
-    public void WithdrawFromAccount(string userName, string accountType, decimal amountToWithdraw)
+    public bool WithdrawFromAccount(string userName, string accountType, decimal amountToWithdraw)
     {
-      userAccounts.Find(account => account.UserName == userName && account.AccountType == accountType).AccountBalance -= amountToWithdraw;
+      var accountBalance = userAccounts.Find(account => account.UserName == userName && account.AccountType == accountType).AccountBalance;
 
-      var withdrawalTransaction = new Transaction();
-      withdrawalTransaction.UserName = userName;
-      withdrawalTransaction.AccountType = accountType;
-      withdrawalTransaction.TransactionType = "Withdrawal";
-      withdrawalTransaction.TransactionAmount = amountToWithdraw;
+      if (accountBalance >= amountToWithdraw)
+      {
+        userAccounts.Find(account => account.UserName == userName && account.AccountType == accountType).AccountBalance -= amountToWithdraw;
 
-      userTransactions.Add(withdrawalTransaction);
+        var withdrawalTransaction = new Transaction();
+        withdrawalTransaction.UserName = userName;
+        withdrawalTransaction.AccountType = accountType;
+        withdrawalTransaction.TransactionType = "Withdrawal";
+        withdrawalTransaction.TransactionAmount = amountToWithdraw;
 
-      SaveAccountsToFile();
-      SaveTransactionsToFile();
+        userTransactions.Add(withdrawalTransaction);
+
+        SaveAccountsToFile();
+        SaveTransactionsToFile();
+
+        return true;
+      }
+      else
+      {
+        return false;
+      }
     }
 
-    public void TransferFromAccount(string userName, string accountType, decimal amountToTransfer)
+    public bool TransferFromAccount(string userName, string accountType, decimal amountToTransfer)
     {
       var transferToAccount = userAccounts.Find(account => account.UserName == userName && account.AccountType != accountType).AccountType;
 
-      userAccounts.Find(account => account.UserName == userName && account.AccountType == accountType).AccountBalance -= amountToTransfer;
-      userAccounts.Find(account => account.UserName == userName && account.AccountType == transferToAccount).AccountBalance += amountToTransfer;
+      var accountBalance = userAccounts.Find(account => account.UserName == userName && account.AccountType == accountType).AccountBalance;
 
-      var transferOutTransaction = new Transaction();
-      transferOutTransaction.UserName = userName;
-      transferOutTransaction.AccountType = accountType;
-      transferOutTransaction.TransactionType = "Transfer Out";
-      transferOutTransaction.TransactionAmount = amountToTransfer;
+      if (accountBalance >= amountToTransfer)
+      {
+        userAccounts.Find(account => account.UserName == userName && account.AccountType == accountType).AccountBalance -= amountToTransfer;
+        userAccounts.Find(account => account.UserName == userName && account.AccountType == transferToAccount).AccountBalance += amountToTransfer;
 
-      userTransactions.Add(transferOutTransaction);
+        var transferOutTransaction = new Transaction();
+        transferOutTransaction.UserName = userName;
+        transferOutTransaction.AccountType = accountType;
+        transferOutTransaction.TransactionType = "Transfer Out";
+        transferOutTransaction.TransactionAmount = amountToTransfer;
 
-      var transferInTransaction = new Transaction();
-      transferInTransaction.UserName = userName;
-      transferInTransaction.AccountType = transferToAccount;
-      transferInTransaction.TransactionType = "Transfer In";
-      transferInTransaction.TransactionAmount = amountToTransfer;
+        userTransactions.Add(transferOutTransaction);
 
-      userTransactions.Add(transferInTransaction);
+        var transferInTransaction = new Transaction();
+        transferInTransaction.UserName = userName;
+        transferInTransaction.AccountType = transferToAccount;
+        transferInTransaction.TransactionType = "Transfer In";
+        transferInTransaction.TransactionAmount = amountToTransfer;
 
-      SaveAccountsToFile();
-      SaveTransactionsToFile();
+        userTransactions.Add(transferInTransaction);
+
+        SaveAccountsToFile();
+        SaveTransactionsToFile();
+
+        return true;
+      }
+      else
+      {
+        return false;
+      }
     }
 
     public void DisplayAccounts(string userName)

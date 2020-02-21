@@ -21,21 +21,35 @@ namespace SuncoastBank
 
       var userName = "";
       var password = "";
+      var remainingLoginAttempts = 2;
 
       RequestLoginDetails(accountManager, out userName, out password);
 
-      while (!accountManager.AccountVerified(userName, password))
+      while (!accountManager.AccountVerified(userName, password) && remainingLoginAttempts > 0)
       {
         Console.WriteLine();
         Console.WriteLine("Invalid User Name or password. Please try again.");
         Console.WriteLine();
 
+        remainingLoginAttempts--;
+
         RequestLoginDetails(accountManager, out userName, out password);
       }
 
-      MyClearConsole(accountManager, userName);
-
       var isRunning = true;
+
+      if (remainingLoginAttempts == 0)
+      {
+        isRunning = false;
+
+        Console.WriteLine();
+        Console.WriteLine("I am sorry, you have exceeded the maximum number of login attempts. System will now close.");
+        Console.WriteLine();
+      }
+      else
+      {
+        MyClearConsole(accountManager, userName);
+      }
 
       while (isRunning)
       {
@@ -119,12 +133,20 @@ namespace SuncoastBank
               withdrawalAmount = Console.ReadLine();
             }
 
-            accountManager.WithdrawFromAccount(userName, withdrawalAccount, decWithdrawAmount);
+            if (accountManager.WithdrawFromAccount(userName, withdrawalAccount, decWithdrawAmount))
+            {
+              MyClearConsole(accountManager, userName);
 
-            MyClearConsole(accountManager, userName);
+              Console.WriteLine($"Withdrawal from {withdrawalAccount} account saved successfully!");
+              Console.WriteLine();
+            }
+            else
+            {
+              MyClearConsole(accountManager, userName);
 
-            Console.WriteLine($"Withdrawal from {withdrawalAccount} account saved successfully!");
-            Console.WriteLine();
+              Console.WriteLine($"There are not enough funds in your {withdrawalAccount} account to make that withdrawal. Transaction not saved.");
+              Console.WriteLine();
+            }
 
             break;
           case "transfer":
@@ -153,12 +175,20 @@ namespace SuncoastBank
               transferFromAmount = Console.ReadLine();
             }
 
-            accountManager.TransferFromAccount(userName, transferFromAccount, decTransferFromAmount);
+            if (accountManager.TransferFromAccount(userName, transferFromAccount, decTransferFromAmount))
+            {
+              MyClearConsole(accountManager, userName);
 
-            MyClearConsole(accountManager, userName);
+              Console.WriteLine($"Transfer from {transferFromAccount} account saved successfully!");
+              Console.WriteLine();
+            }
+            else
+            {
+              MyClearConsole(accountManager, userName);
 
-            Console.WriteLine($"Transfer from {transferFromAccount} account saved successfully!");
-            Console.WriteLine();
+              Console.WriteLine($"There are not enough funds in your {transferFromAccount} account to make that transfer. Transaction not saved.");
+              Console.WriteLine();
+            }
 
             break;
           case "view":
@@ -185,6 +215,7 @@ namespace SuncoastBank
         }
       }
 
+      Console.WriteLine();
       Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
       Console.WriteLine("Thank you for using Suncoast Bank! Goodbye!");
       Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
