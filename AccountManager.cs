@@ -13,6 +13,27 @@ namespace SuncoastBank
 
     public List<Transaction> userTransactions = new List<Transaction>();
 
+    public List<User> userList = new List<User>();
+
+    public void LoadUsersFromFile()
+    {
+      using (var reader = new StreamReader("Users.csv"))
+      using (var csvReader = new CsvReader(reader, CultureInfo.InvariantCulture))
+      {
+        userList = csvReader.GetRecords<User>().ToList();
+      }
+    }
+
+    public void SaveUsersToFile()
+    {
+      using (var writer = new StreamWriter("Users.csv"))
+      using (var csvWriter = new CsvWriter(writer, CultureInfo.InvariantCulture))
+      {
+        csvWriter.WriteRecords(userList);
+        writer.Flush();
+      }
+    }
+
     public void LoadAccountsFromFile()
     {
       using (var reader = new StreamReader("Accounts.csv"))
@@ -51,6 +72,55 @@ namespace SuncoastBank
       }
     }
 
+    public bool AccountVerified(string userName, string password)
+    {
+      if (userList.Count(user => user.UserName == userName && user.Password == password) > 0)
+        return true;
+      else
+        return false;
+    }
+
+    public bool AccountExists(string userName)
+    {
+      if (userList.Count(user => user.UserName == userName) > 0)
+        return true;
+      else
+        return false;
+    }
+
+    public void CreateUser(string userName, string password)
+    {
+      var newUser = new User();
+
+      newUser.UserName = userName;
+      newUser.Password = password;
+
+      userList.Add(newUser);
+
+      SaveUsersToFile();
+    }
+
+    public void CreateAccounts(string userName)
+    {
+      var newCheckingAcct = new Account();
+
+      newCheckingAcct.UserName = userName;
+      newCheckingAcct.AccountType = "checking";
+      newCheckingAcct.AccountBalance = 0;
+
+      userAccounts.Add(newCheckingAcct);
+
+      var newSavingsAcct = new Account();
+
+      newSavingsAcct.UserName = userName;
+      newSavingsAcct.AccountType = "savings";
+      newSavingsAcct.AccountBalance = 0;
+
+      userAccounts.Add(newSavingsAcct);
+
+      SaveAccountsToFile();
+    }
+
     public void DepositInAccount(string userName, string accountType, decimal amountToDeposit)
     {
       userAccounts.Find(account => account.UserName == userName && account.AccountType == accountType).AccountBalance += amountToDeposit;
@@ -65,10 +135,6 @@ namespace SuncoastBank
 
       SaveAccountsToFile();
       SaveTransactionsToFile();
-
-      Console.WriteLine();
-      Console.WriteLine($"Deposit to {accountType} account saved successfully!");
-      Console.WriteLine();
     }
 
     public void WithdrawFromAccount(string userName, string accountType, decimal amountToWithdraw)
@@ -85,10 +151,6 @@ namespace SuncoastBank
 
       SaveAccountsToFile();
       SaveTransactionsToFile();
-
-      Console.WriteLine();
-      Console.WriteLine($"Withdrawal from {accountType} account saved successfully!");
-      Console.WriteLine();
     }
 
     public void TransferFromAccount(string userName, string accountType, decimal amountToTransfer)
@@ -116,9 +178,26 @@ namespace SuncoastBank
 
       SaveAccountsToFile();
       SaveTransactionsToFile();
+    }
 
-      Console.WriteLine();
-      Console.WriteLine($"Transfer from {accountType} account to {transferToAccount} account saved successfully!");
+    public void DisplayAccounts(string userName)
+    {
+      var accountsToDisplay = userAccounts.Where(account => account.UserName == userName).ToList();
+
+      Console.WriteLine("Your Account Summary");
+      Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+      Console.WriteLine("| Account Type | Balance     |");
+      Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+
+      foreach (var account in accountsToDisplay)
+      {
+        var formatAccountType = String.Format("{0,-12}", account.AccountType);
+        var formatAccountBalance = String.Format("{0,-11}", account.AccountBalance);
+
+        Console.WriteLine($"| {formatAccountType} | {formatAccountBalance} |");
+      }
+
+      Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
       Console.WriteLine();
     }
 
@@ -127,21 +206,22 @@ namespace SuncoastBank
       var historyToDisplay = userTransactions.Where(trans => trans.UserName == userName && trans.AccountType == accountToView)
                                          .OrderBy(trans => trans.TransactionDate).ToList();
 
-      Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-      Console.WriteLine("| Account Type | Transaction | Amount | Transaction Date     |");
-      Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+      Console.WriteLine($"Your {accountToView} Account Transaction History");
+      Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+      Console.WriteLine("| Account Type | Transaction      | Amount     | Transaction Date      |");
+      Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
       foreach (var trans in historyToDisplay)
       {
         var formatAccountType = String.Format("{0,-12}", trans.AccountType);
-        var formatTransType = String.Format("{0,-11}", trans.TransactionType);
-        var formatTransAmount = String.Format("{0,-6}", trans.TransactionAmount);
-        var formatTransDate = String.Format("{0,-16}", trans.TransactionDate);
+        var formatTransType = String.Format("{0,-16}", trans.TransactionType);
+        var formatTransAmount = String.Format("{0,-10}", trans.TransactionAmount);
+        var formatTransDate = String.Format("{0,-21}", trans.TransactionDate);
 
         Console.WriteLine($"| {formatAccountType} | {formatTransType} | {formatTransAmount} | {formatTransDate} |");
       }
 
-      Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+      Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
       Console.WriteLine();
     }
   }

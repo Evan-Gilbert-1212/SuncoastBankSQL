@@ -1,3 +1,7 @@
 UserName,AccountType,AccountBalance
-Evan,checking,1050
-Evan,savings,0
+Evan,checking,800
+Evan,savings,595.67
+Steve,checking,1000
+Steve,savings,0
+John,checking,666.66
+John,savings,0

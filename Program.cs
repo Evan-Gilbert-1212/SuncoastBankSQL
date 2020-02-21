@@ -1,7 +1,4 @@
 ﻿using System;
-using System.IO;
-using CsvHelper;
-using System.Globalization;
 using System.Linq;
 
 namespace SuncoastBank
@@ -10,31 +7,33 @@ namespace SuncoastBank
   {
     static void Main(string[] args)
     {
-      var userName = "Evan";
-
       Console.Clear();
       Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~");
       Console.WriteLine("Welcome to Suncoast Bank!");
       Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~");
       Console.WriteLine();
-      Console.WriteLine($"User Logged In: {userName}");
-      Console.WriteLine();
 
       var accountManager = new AccountManager();
 
+      accountManager.LoadUsersFromFile();
       accountManager.LoadAccountsFromFile();
       accountManager.LoadTransactionsFromFile();
 
-      Console.WriteLine("Here is your Account Summary:");
-      Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+      var userName = "";
+      var password = "";
 
-      foreach (var account in accountManager.userAccounts)
+      RequestLoginDetails(accountManager, out userName, out password);
+
+      while (!accountManager.AccountVerified(userName, password))
       {
-        Console.WriteLine($"{account.AccountType} Account : Balance of {account.AccountBalance}");
+        Console.WriteLine();
+        Console.WriteLine("Invalid User Name or password. Please try again.");
+        Console.WriteLine();
+
+        RequestLoginDetails(accountManager, out userName, out password);
       }
 
-      Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-      Console.WriteLine();
+      MyClearConsole(accountManager, userName);
 
       var isRunning = true;
 
@@ -45,7 +44,7 @@ namespace SuncoastBank
         Console.WriteLine("(WITHDRAW) money from an account");
         Console.WriteLine("(TRANSFER) money between your accounts");
         Console.WriteLine("(VIEW) the transaction history on an account");
-        Console.WriteLine("(EXIT) Suncoast bank program");
+        Console.WriteLine("(EXIT) Suncoast Bank program");
 
         var userResponse = Console.ReadLine().ToLower();
 
@@ -88,6 +87,11 @@ namespace SuncoastBank
 
             accountManager.DepositInAccount(userName, depositAccount, decDepositAmount);
 
+            MyClearConsole(accountManager, userName);
+
+            Console.WriteLine($"Deposit to {depositAccount} account saved successfully!");
+            Console.WriteLine();
+
             break;
           case "withdraw":
             Console.WriteLine();
@@ -117,6 +121,11 @@ namespace SuncoastBank
 
             accountManager.WithdrawFromAccount(userName, withdrawalAccount, decWithdrawAmount);
 
+            MyClearConsole(accountManager, userName);
+
+            Console.WriteLine($"Withdrawal from {withdrawalAccount} account saved successfully!");
+            Console.WriteLine();
+
             break;
           case "transfer":
             Console.WriteLine();
@@ -144,7 +153,13 @@ namespace SuncoastBank
               transferFromAmount = Console.ReadLine();
             }
 
-            accountManager.TransferFromAccount(userName, transferFromAmount, decTransferFromAmount);
+            accountManager.TransferFromAccount(userName, transferFromAccount, decTransferFromAmount);
+
+            MyClearConsole(accountManager, userName);
+
+            Console.WriteLine($"Transfer from {transferFromAccount} account saved successfully!");
+            Console.WriteLine();
+
             break;
           case "view":
             Console.WriteLine();
@@ -159,6 +174,8 @@ namespace SuncoastBank
               accountToView = Console.ReadLine().ToLower();
             }
 
+            MyClearConsole(accountManager, userName);
+
             accountManager.DisplayTransactionHistory(userName, accountToView);
 
             break;
@@ -171,6 +188,69 @@ namespace SuncoastBank
       Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
       Console.WriteLine("Thank you for using Suncoast Bank! Goodbye!");
       Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+    }
+
+    static void RequestLoginDetails(AccountManager accountManager, out string userName, out string password)
+    {
+      Console.WriteLine("Please enter your User Name:");
+
+      //Need more validation on this input
+      //need to make sure empty is not an acceptable user
+      userName = Console.ReadLine();
+
+      if (!accountManager.AccountExists(userName))
+      {
+        //Create account/ask for password
+        Console.WriteLine("You have not set up your account yet. Lets do that now!");
+        Console.WriteLine("Please enter a password for your account:");
+
+        var newPassword = Console.ReadLine();
+
+        accountManager.CreateUser(userName, newPassword);
+
+        accountManager.CreateAccounts(userName);
+
+        password = newPassword;
+      }
+      else
+      {
+        //Build logic for reading password
+        Console.WriteLine();
+        Console.WriteLine("Please enter your password:");
+
+        password = "";
+        ConsoleKeyInfo keystroke;
+
+        do
+        {
+          keystroke = Console.ReadKey(true);
+
+          // Backspace Should Not Work
+          if (keystroke.Key != ConsoleKey.Backspace && keystroke.Key != ConsoleKey.Enter)
+          {
+            password += keystroke.KeyChar;
+            Console.Write("*");
+          }
+          else if (keystroke.Key == ConsoleKey.Backspace)
+          {
+            Console.Write("\b");
+          }
+        }
+        while (keystroke.Key != ConsoleKey.Enter);
+      }
+    }
+
+    static void MyClearConsole(AccountManager accountManager, string userName)
+    {
+      Console.Clear();
+      Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~");
+      Console.WriteLine("Welcome to Suncoast Bank!");
+      Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~");
+      Console.WriteLine();
+      Console.WriteLine($"Welcome, {userName}!");
+      Console.WriteLine();
+
+      accountManager.DisplayAccounts(userName);
     }
   }
 }
