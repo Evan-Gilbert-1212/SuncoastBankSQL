@@ -4,9 +4,9 @@ namespace SuncoastBank
 {
   public class Transaction
   {
-    public string UserName { get; set; }
+    public int ID { get; set; }
 
-    public string AccountType { get; set; }
+    public int Account_ID { get; set; }
 
     public string TransactionType { get; set; }
 
