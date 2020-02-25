@@ -13,15 +13,19 @@ namespace SuncoastBank
       Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~");
       Console.WriteLine();
 
-      var bankDatabase = new BankData();
+      var accountManager = new AccountManager();
+
+      accountManager.LoadUsersFromFile();
+      accountManager.LoadAccountsFromFile();
+      accountManager.LoadTransactionsFromFile();
 
       var userName = "";
       var password = "";
       var remainingLoginAttempts = 2;
 
-      RequestLoginDetails(bankDatabase, out userName, out password);
+      RequestLoginDetails(accountManager, out userName, out password);
 
-      while (!bankDatabase.UserVerified(userName, password) && remainingLoginAttempts > 0)
+      while (!accountManager.AccountVerified(userName, password) && remainingLoginAttempts > 0)
       {
         Console.WriteLine();
         Console.WriteLine("Invalid User Name or password. Please try again.");
@@ -29,10 +33,8 @@ namespace SuncoastBank
 
         remainingLoginAttempts--;
 
-        RequestLoginDetails(bankDatabase, out userName, out password);
+        RequestLoginDetails(accountManager, out userName, out password);
       }
-
-      var userID = bankDatabase.Users.FirstOrDefault(user => user.UserName == userName).ID;
 
       var isRunning = true;
 
@@ -46,7 +48,7 @@ namespace SuncoastBank
       }
       else
       {
-        MyClearConsole(bankDatabase, userName, userID);
+        MyClearConsole(accountManager, userName);
       }
 
       while (isRunning)
@@ -97,12 +99,9 @@ namespace SuncoastBank
               depositAmount = Console.ReadLine();
             }
 
-            var depAccountID = bankDatabase.Accounts.FirstOrDefault(account => account.User_ID == userID
-                                 && account.AccountType == depositAccount).ID;
+            accountManager.DepositInAccount(userName, depositAccount, decDepositAmount);
 
-            bankDatabase.DepositInAccount(depAccountID, decDepositAmount);
-
-            MyClearConsole(bankDatabase, userName, userID);
+            MyClearConsole(accountManager, userName);
 
             Console.WriteLine($"Deposit to {depositAccount} account saved successfully!");
             Console.WriteLine();
@@ -134,19 +133,16 @@ namespace SuncoastBank
               withdrawalAmount = Console.ReadLine();
             }
 
-            var withAccountID = bankDatabase.Accounts.FirstOrDefault(account => account.User_ID == userID
-                                  && account.AccountType == withdrawalAccount).ID;
-
-            if (bankDatabase.WithdrawFromAccount(withAccountID, decWithdrawAmount))
+            if (accountManager.WithdrawFromAccount(userName, withdrawalAccount, decWithdrawAmount))
             {
-              MyClearConsole(bankDatabase, userName, userID);
+              MyClearConsole(accountManager, userName);
 
               Console.WriteLine($"Withdrawal from {withdrawalAccount} account saved successfully!");
               Console.WriteLine();
             }
             else
             {
-              MyClearConsole(bankDatabase, userName, userID);
+              MyClearConsole(accountManager, userName);
 
               Console.WriteLine($"There are not enough funds in your {withdrawalAccount} account to make that withdrawal. Transaction not saved.");
               Console.WriteLine();
@@ -179,19 +175,16 @@ namespace SuncoastBank
               transferFromAmount = Console.ReadLine();
             }
 
-            var transAccountID = bankDatabase.Accounts.FirstOrDefault(account => account.User_ID == userID
-                                   && account.AccountType == transferFromAccount).ID;
-
-            if (bankDatabase.TransferFromAccount(userID, transAccountID, decTransferFromAmount))
+            if (accountManager.TransferFromAccount(userName, transferFromAccount, decTransferFromAmount))
             {
-              MyClearConsole(bankDatabase, userName, userID);
+              MyClearConsole(accountManager, userName);
 
               Console.WriteLine($"Transfer from {transferFromAccount} account saved successfully!");
               Console.WriteLine();
             }
             else
             {
-              MyClearConsole(bankDatabase, userName, userID);
+              MyClearConsole(accountManager, userName);
 
               Console.WriteLine($"There are not enough funds in your {transferFromAccount} account to make that transfer. Transaction not saved.");
               Console.WriteLine();
@@ -211,12 +204,9 @@ namespace SuncoastBank
               accountToView = Console.ReadLine().ToLower();
             }
 
-            MyClearConsole(bankDatabase, userName, userID);
+            MyClearConsole(accountManager, userName);
 
-            var displayAccountID = bankDatabase.Accounts.FirstOrDefault(account => account.User_ID == userID
-                                   && account.AccountType == accountToView).ID;
-
-            bankDatabase.DisplayTransactionHistory(displayAccountID);
+            accountManager.DisplayTransactionHistory(userName, accountToView);
 
             break;
           case "exit":
@@ -231,7 +221,7 @@ namespace SuncoastBank
       Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
     }
 
-    static void RequestLoginDetails(BankData bankDatabase, out string userName, out string password)
+    static void RequestLoginDetails(AccountManager accountManager, out string userName, out string password)
     {
       Console.WriteLine("Please enter your User Name:");
 
@@ -239,7 +229,7 @@ namespace SuncoastBank
       //need to make sure empty is not an acceptable user
       userName = Console.ReadLine();
 
-      if (!bankDatabase.UserExists(userName))
+      if (!accountManager.AccountExists(userName))
       {
         //Create account/ask for password
         Console.WriteLine("You have not set up your account yet. Lets do that now!");
@@ -247,11 +237,9 @@ namespace SuncoastBank
 
         var newPassword = Console.ReadLine();
 
-        bankDatabase.CreateUser(userName, newPassword);
+        accountManager.CreateUser(userName, newPassword);
 
-        var newUserID = bankDatabase.GetUserID(userName);
-
-        bankDatabase.CreateAccounts(newUserID);
+        accountManager.CreateAccounts(userName);
 
         password = newPassword;
       }
@@ -283,7 +271,7 @@ namespace SuncoastBank
       }
     }
 
-    static void MyClearConsole(BankData bankDatabase, string userName, int userID)
+    static void MyClearConsole(AccountManager accountManager, string userName)
     {
       Console.Clear();
       Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~");
@@ -293,7 +281,7 @@ namespace SuncoastBank
       Console.WriteLine($"Welcome, {userName}!");
       Console.WriteLine();
 
-      bankDatabase.DisplayAccounts(userID);
+      accountManager.DisplayAccounts(userName);
     }
   }
 }
